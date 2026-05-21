@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Descomplica TCC - Sistema de Gestão</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- ============== TELA DE LOGIN ============== -->
+<div id="loginScreen" class="login-container">
+  <div class="login-card">
+    <div class="login-logo">
+      <h1>📚 Descomplica TCC</h1>
+      <p>Sistema de Gestão</p>
+    </div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" id="loginEmail" class="form-control" required autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" id="loginPassword" class="form-control" required autocomplete="current-password">
+      </div>
+      <div id="loginError" style="display:none" class="alert alert-danger"></div>
+      <button type="submit" class="btn btn-primary btn-full btn-lg" id="loginBtn">Entrar</button>
+    </form>
+  </div>
+</div>
+
+<!-- ============== APP PRINCIPAL ============== -->
+<div id="app" class="app">
+  
+  <!-- HEADER -->
+  <div class="header">
+    <h1>📚 Descomplica TCC</h1>
+    <div class="header-actions">
+      <span class="text-muted" id="userEmail" style="font-size:12px"></span>
+      <button class="btn btn-outline btn-sm" onclick="logout()">Sair</button>
+    </div>
+  </div>
+
+  <!-- NAVEGAÇÃO -->
+  <nav class="nav">
+    <button class="nav-tab active" data-page="dashboard">📊 Dashboard</button>
+    <button class="nav-tab" data-page="agendamentos">📋 Agendamentos</button>
+    <button class="nav-tab" data-page="folha">💰 Folha Semanal</button>
+    <button class="nav-tab" data-page="colaboradores">👥 Colaboradores</button>
+    <button class="nav-tab" data-page="despesas">📉 Despesas</button>
+    <button class="nav-tab" data-page="historico">📜 Histórico</button>
+  </nav>
+
+  <main class="main">
+
+    <!-- ============== DASHBOARD ============== -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <h2 class="page-title">Dashboard</h2>
+        <select id="dashFiltroMes" class="form-control" style="max-width:200px"></select>
+      </div>
+
+      <div class="cards-grid">
+        <div class="stat-card info">
+          <div class="stat-card-label">Total Faturado</div>
+          <div class="stat-card-value" id="statFaturado">R$ 0,00</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-card-label">Já Recebido</div>
+          <div class="stat-card-value text-success" id="statRecebido">R$ 0,00</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-card-label">A Receber</div>
+          <div class="stat-card-value text-warning" id="statAReceber">R$ 0,00</div>
+        </div>
+        <div class="stat-card danger">
+          <div class="stat-card-label">Comissões a Pagar</div>
+          <div class="stat-card-value text-danger" id="statComissoesAPagar">R$ 0,00</div>
+        </div>
+      </div>
+
+      <div class="cards-grid">
+        <div class="stat-card">
+          <div class="stat-card-label">Trabalhos no Período</div>
+          <div class="stat-card-value" id="statTrabalhos">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Despesas do Mês</div>
+          <div class="stat-card-value text-danger" id="statDespesas">R$ 0,00</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Comissões Pagas</div>
+          <div class="stat-card-value" id="statComissoesPagas">R$ 0,00</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Lucro Bruto</div>
+          <div class="stat-card-value" id="statLucro">R$ 0,00</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="mb-16">Resumo por Colaborador (Mês Atual)</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Colaborador</th>
+                <th>Trabalhos</th>
+                <th class="text-right">Já Pago</th>
+                <th class="text-right">A Pagar</th>
+                <th class="text-right">Total Mês</th>
+              </tr>
+            </thead>
+            <tbody id="dashColaboradoresBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============== AGENDAMENTOS ============== -->
+    <div id="page-agendamentos" class="page">
+      <div class="page-header">
+        <h2 class="page-title">Agendamentos</h2>
+        <button class="btn btn-primary" onclick="abrirNovoAgendamento()">+ Novo Agendamento</button>
+      </div>
+
+      <div class="filters">
+        <div class="form-group" style="margin-bottom:0">
+          <label>Buscar cliente</label>
+          <input type="text" id="filtroCliente" class="form-control" placeholder="Nome do cliente...">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Mês</label>
+          <select id="filtroMes" class="form-control"></select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Colaborador</label>
+          <select id="filtroColaborador" class="form-control"><option value="">Todos</option></select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Status Cliente</label>
+          <select id="filtroStatus" class="form-control">
+            <option value="">Todos</option>
+            <option value="pago">Cliente Pagou</option>
+            <option value="pendente">Cliente Pendente</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card mb-16" style="background:var(--gray-50)">
+        <div class="flex-between" style="font-size:13px">
+          <span><strong id="ageQtd">0</strong> registros</span>
+          <span>Total: <strong id="ageTotal">R$ 0,00</strong></span>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Cliente</th>
+              <th>Tipo</th>
+              <th class="text-right">Valor</th>
+              <th>Gestor</th>
+              <th>Produtor</th>
+              <th>Atendente</th>
+              <th>Cliente</th>
+              <th>Comissões</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="agendamentosBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ============== FOLHA SEMANAL ============== -->
+    <div id="page-folha" class="page">
+      <div class="page-header">
+        <h2 class="page-title">💰 Folha de Pagamento Semanal</h2>
+      </div>
+
+      <div class="alert alert-info">
+        <strong>Como funciona:</strong> aqui aparecem todas as comissões pendentes de pagamento aos colaboradores. 
+        Só aparecem trabalhos onde o cliente <strong>já pagou</strong>. Selecione os trabalhos que quer baixar e clique em "Pagar Selecionados", 
+        ou use "Pagar Tudo do Colaborador" para baixar todas as comissões pendentes de uma pessoa de uma vez.
+      </div>
+
+      <div class="filters">
+        <div class="form-group" style="margin-bottom:0">
+          <label>Data do pagamento (que será registrada)</label>
+          <input type="date" id="folhaDataPagamento" class="form-control">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Filtrar por colaborador</label>
+          <select id="folhaFiltroColaborador" class="form-control"><option value="">Todos</option></select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Ações em massa</label>
+          <div style="display:flex; gap:8px">
+            <button class="btn btn-success" onclick="pagarSelecionados()">✓ Pagar Selecionados</button>
+            <button class="btn btn-outline btn-sm" onclick="carregarFolha()">↻ Atualizar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cards-grid">
+        <div class="stat-card success">
+          <div class="stat-card-label">Total a Pagar</div>
+          <div class="stat-card-value text-success" id="folhaTotalAPagar">R$ 0,00</div>
+        </div>
+        <div class="stat-card info">
+          <div class="stat-card-label">Colaboradores com Pendência</div>
+          <div class="stat-card-value" id="folhaQtdColabs">0</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-card-label">Comissões Selecionadas</div>
+          <div class="stat-card-value" id="folhaSelecionado">R$ 0,00</div>
+        </div>
+      </div>
+
+      <div id="folhaContent"></div>
+    </div>
+
+    <!-- ============== COLABORADORES ============== -->
+    <div id="page-colaboradores" class="page">
+      <div class="page-header">
+        <h2 class="page-title">👥 Colaboradores</h2>
+        <select id="colabSelector" class="form-control" style="max-width:250px" onchange="carregarDetalheColaborador()"></select>
+      </div>
+
+      <div id="colabContent">
+        <div class="empty-state">
+          <div class="empty-state-icon">👤</div>
+          <p>Selecione um colaborador acima para ver os detalhes</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============== DESPESAS ============== -->
+    <div id="page-despesas" class="page">
+      <div class="page-header">
+        <h2 class="page-title">📉 Despesas</h2>
+        <button class="btn btn-primary" onclick="abrirNovaDespesa()">+ Nova Despesa</button>
+      </div>
+
+      <div class="filters">
+        <div class="form-group" style="margin-bottom:0">
+          <label>Mês</label>
+          <select id="despFiltroMes" class="form-control"></select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Categoria</label>
+          <select id="despFiltroCategoria" class="form-control">
+            <option value="">Todas</option>
+            <option value="SALÁRIO">Salário</option>
+            <option value="DES.PERACIONAIS">Despesas Operacionais</option>
+            <option value="ATENDIMENTO">Atendimento</option>
+            <option value="PRODUÇÃO">Produção</option>
+            <option value="MARKETING">Marketing</option>
+            <option value="INDICAÇÃO">Indicação</option>
+            <option value="TRIBUTOS">Tributos</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="cards-grid" id="despesasCards"></div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th>Categoria</th>
+              <th class="text-right">Valor</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="despesasBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ============== HISTÓRICO ============== -->
+    <div id="page-historico" class="page">
+      <div class="page-header">
+        <h2 class="page-title">📜 Histórico de Pagamentos</h2>
+      </div>
+
+      <div class="alert alert-info">
+        Aqui ficam registradas todas as folhas de pagamento que você fechou. Cada registro mostra a data, o colaborador e o valor total pago naquela data.
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Data do Pagamento</th>
+              <th>Colaborador</th>
+              <th class="text-right">Trabalhos</th>
+              <th class="text-right">Valor Total</th>
+              <th>Observações</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="historicoBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ============== MODAL: AGENDAMENTO ============== -->
+<div id="modalAgendamento" class="modal-overlay">
+  <div class="modal modal-large">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modalAgendamentoTitulo">Novo Agendamento</h3>
+      <button class="modal-close" onclick="fecharModal('modalAgendamento')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ageId">
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data *</label>
+          <input type="date" id="ageData" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Mês</label>
+          <select id="ageMes" class="form-control">
+            <option value="JANEIRO">Janeiro</option>
+            <option value="FEVEREIRO">Fevereiro</option>
+            <option value="MARÇO">Março</option>
+            <option value="ABRIL">Abril</option>
+            <option value="MAIO">Maio</option>
+            <option value="JUNHO">Junho</option>
+            <option value="JULHO">Julho</option>
+            <option value="AGOSTO">Agosto</option>
+            <option value="SETEMBRO">Setembro</option>
+            <option value="OUTUBRO">Outubro</option>
+            <option value="NOVEMBRO">Novembro</option>
+            <option value="DEZEMBRO">Dezembro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Cliente *</label>
+        <input type="text" id="ageCliente" class="form-control" required>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tipo de Trabalho</label>
+          <input type="text" id="ageTipo" class="form-control" placeholder="Ex: ARTIGO, MONOGRAFIA, TCC">
+        </div>
+        <div class="form-group">
+          <label>Telefone</label>
+          <input type="text" id="ageTelefone" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Páginas</label>
+          <input type="text" id="agePaginas" class="form-control">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Valor (R$) *</label>
+          <input type="number" id="ageValor" class="form-control" step="0.01" required onchange="calcularComissoes()">
+        </div>
+        <div class="form-group">
+          <label>Desconto</label>
+          <select id="ageDesconto" class="form-control">
+            <option value="">Sem desconto</option>
+            <option value="DESC 1">DESC 1</option>
+            <option value="DESC 2">DESC 2</option>
+          </select>
+        </div>
+      </div>
+
+      <h4 class="mt-16 mb-12" style="font-size:14px; color:var(--gray-700)">Equipe Responsável</h4>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label>Gestor</label>
+          <select id="ageGestor" class="form-control colaborador-select"></select>
+        </div>
+        <div class="form-group">
+          <label>Produtor</label>
+          <select id="ageProdutor" class="form-control colaborador-select"></select>
+        </div>
+        <div class="form-group">
+          <label>Atendente</label>
+          <select id="ageAtendente" class="form-control colaborador-select"></select>
+        </div>
+      </div>
+
+      <h4 class="mt-16 mb-12" style="font-size:14px; color:var(--gray-700)">Comissões (calculadas automaticamente)</h4>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Gestor (20%)</label>
+          <input type="number" id="ageComissaoGestor" class="form-control" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Produtor (15%)</label>
+          <input type="number" id="ageComissaoProdutor" class="form-control" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Atendente (5%)</label>
+          <input type="number" id="ageComissaoAtendente" class="form-control" step="0.01">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Observações</label>
+        <textarea id="ageObservacoes" class="form-control" rows="2"></textarea>
+      </div>
+
+      <div id="ageStatusCliente" style="display:none">
+        <h4 class="mt-16 mb-12" style="font-size:14px; color:var(--gray-700)">Status de Pagamento</h4>
+        <div class="card" style="background:var(--gray-50)">
+          <div class="flex-between mb-12">
+            <strong>Cliente pagou?</strong>
+            <span id="ageStatusClientePagou"></span>
+          </div>
+          <button type="button" class="btn btn-success" id="btnMarcarClientePagou" onclick="marcarClientePagou()">
+            ✓ Marcar Cliente como Pago
+          </button>
+          <button type="button" class="btn btn-warning" id="btnDesmarcarClientePagou" style="display:none" onclick="desmarcarClientePagou()">
+            ↶ Desmarcar Pagamento do Cliente
+          </button>
+        </div>
+
+        <div id="ageStatusComissoes" style="display:none">
+          <h4 class="mt-16 mb-12" style="font-size:14px; color:var(--gray-700)">Baixa Individual de Comissões</h4>
+          <div id="ageBaixaIndividual"></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="btnExcluirAgendamento" onclick="excluirAgendamento()" style="margin-right:auto; display:none">Excluir</button>
+      <button class="btn btn-outline" onclick="fecharModal('modalAgendamento')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarAgendamento()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============== MODAL: DESPESA ============== -->
+<div id="modalDespesa" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modalDespesaTitulo">Nova Despesa</h3>
+      <button class="modal-close" onclick="fecharModal('modalDespesa')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="despId">
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data *</label>
+          <input type="date" id="despData" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Mês</label>
+          <select id="despMes" class="form-control">
+            <option value="JANEIRO">Janeiro</option>
+            <option value="FEVEREIRO">Fevereiro</option>
+            <option value="MARÇO">Março</option>
+            <option value="ABRIL">Abril</option>
+            <option value="MAIO">Maio</option>
+            <option value="JUNHO">Junho</option>
+            <option value="JULHO">Julho</option>
+            <option value="AGOSTO">Agosto</option>
+            <option value="SETEMBRO">Setembro</option>
+            <option value="OUTUBRO">Outubro</option>
+            <option value="NOVEMBRO">Novembro</option>
+            <option value="DEZEMBRO">Dezembro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Descrição *</label>
+        <input type="text" id="despDescricao" class="form-control" required>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Categoria</label>
+          <select id="despCategoria" class="form-control">
+            <option value="SALÁRIO">Salário</option>
+            <option value="DES.PERACIONAIS">Despesas Operacionais</option>
+            <option value="ATENDIMENTO">Atendimento</option>
+            <option value="PRODUÇÃO">Produção</option>
+            <option value="MARKETING">Marketing</option>
+            <option value="INDICAÇÃO">Indicação</option>
+            <option value="TRIBUTOS">Tributos</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Valor (R$) *</label>
+          <input type="number" id="despValor" class="form-control" step="0.01" required>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="btnExcluirDespesa" onclick="excluirDespesa()" style="margin-right:auto; display:none">Excluir</button>
+      <button class="btn btn-outline" onclick="fecharModal('modalDespesa')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarDespesa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============== LOADING / TOAST ============== -->
+<div id="loadingFull" class="loading-full" style="display:none">
+  <div class="loading"></div>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
