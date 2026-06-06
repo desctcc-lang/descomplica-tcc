@@ -33,7 +33,7 @@
 
 <!-- ============== APP PRINCIPAL ============== -->
 <div id="app" class="app">
-  
+
   <!-- HEADER -->
   <div class="header">
     <h1>📚 Descomplica TCC</h1>
@@ -46,8 +46,9 @@
   <!-- NAVEGAÇÃO -->
   <nav class="nav">
     <button class="nav-tab active" data-page="dashboard">📊 Dashboard</button>
-    <button class="nav-tab" data-page="agendamentos">📋 Agendamentos</button>
-    <button class="nav-tab" data-page="folha">💰 Folha Semanal</button>
+    <button class="nav-tab" data-page="operacoes">📋 Operações</button>
+    <button class="nav-tab" data-page="pendentes">⏳ Pendentes</button>
+    <button class="nav-tab" data-page="comissoes">💰 Comissões</button>
     <button class="nav-tab" data-page="colaboradores">👥 Colaboradores</button>
     <button class="nav-tab" data-page="despesas">📉 Despesas</button>
     <button class="nav-tab" data-page="historico">📜 Histórico</button>
@@ -59,7 +60,10 @@
     <div id="page-dashboard" class="page active">
       <div class="page-header">
         <h2 class="page-title">Dashboard</h2>
-        <select id="dashFiltroMes" class="form-control" style="max-width:200px"></select>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+          <select id="dashFiltroAno" class="form-control" style="max-width:160px"></select>
+          <select id="dashFiltroMes" class="form-control" style="max-width:200px"></select>
+        </div>
       </div>
 
       <div class="cards-grid">
@@ -101,7 +105,7 @@
       </div>
 
       <div class="card">
-        <h3 class="mb-16">Resumo por Colaborador (Mês Atual)</h3>
+        <h3 class="mb-16">Resumo por Colaborador (Período Selecionado)</h3>
         <div class="table-wrapper">
           <table>
             <thead>
@@ -119,17 +123,26 @@
       </div>
     </div>
 
-    <!-- ============== AGENDAMENTOS ============== -->
-    <div id="page-agendamentos" class="page">
+    <!-- ============== OPERAÇÕES ============== -->
+    <div id="page-operacoes" class="page">
       <div class="page-header">
-        <h2 class="page-title">Agendamentos</h2>
-        <button class="btn btn-primary" onclick="abrirNovoAgendamento()">+ Novo Agendamento</button>
+        <h2 class="page-title">Operações</h2>
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="abrirNovaOperacao()">+ Nova Operação</button>
+          <button class="btn btn-outline" onclick="abrirImportarCSV()">↑ Importar</button>
+          <button class="btn btn-danger btn-sm" onclick="excluirTodosDoMes()">Excluir Mês</button>
+          <button class="btn btn-danger btn-sm" onclick="excluirSelecionadosOp()">Excluir Selecionados</button>
+        </div>
       </div>
 
       <div class="filters">
         <div class="form-group" style="margin-bottom:0">
-          <label>Buscar cliente</label>
-          <input type="text" id="filtroCliente" class="form-control" placeholder="Nome do cliente...">
+          <label>Buscar cliente / telefone</label>
+          <input type="text" id="filtroCliente" class="form-control" placeholder="Nome ou telefone...">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Ano</label>
+          <select id="filtroAno" class="form-control"></select>
         </div>
         <div class="form-group" style="margin-bottom:0">
           <label>Mês</label>
@@ -140,18 +153,22 @@
           <select id="filtroColaborador" class="form-control"><option value="">Todos</option></select>
         </div>
         <div class="form-group" style="margin-bottom:0">
-          <label>Status Cliente</label>
-          <select id="filtroStatus" class="form-control">
-            <option value="">Todos</option>
-            <option value="pago">Cliente Pagou</option>
-            <option value="pendente">Cliente Pendente</option>
+          <label>Status</label>
+          <select id="filtroStatus" class="form-control" multiple size="5">
+            <option value="CADASTRADO" selected>CADASTRADO</option>
+            <option value="PENDENTE" selected>PENDENTE</option>
+            <option value="PRONTO" selected>PRONTO</option>
+            <option value="RECEBIDO" selected>RECEBIDO</option>
+            <option value="CANCELADO" selected>CANCELADO</option>
           </select>
         </div>
       </div>
 
       <div class="card mb-16" style="background:var(--gray-50)">
         <div class="flex-between" style="font-size:13px">
-          <span><strong id="ageQtd">0</strong> registros</span>
+          <div style="display:flex; gap:12px; align-items:center">
+            <span><strong id="ageQtd">0</strong> registros</span>
+          </div>
           <span>Total: <strong id="ageTotal">R$ 0,00</strong></span>
         </div>
       </div>
@@ -160,13 +177,17 @@
         <table>
           <thead>
             <tr>
-              <th>Data</th>
+              <th class="checkbox-cell">
+                <input type="checkbox" id="selectAllOp" onchange="selecionarTodosOp(this.checked)">
+              </th>
+              <th>Vencimento</th>
               <th>Cliente</th>
               <th>Tipo</th>
               <th class="text-right">Valor</th>
               <th>Gestor</th>
               <th>Produtor</th>
               <th>Atendente</th>
+              <th>Status Op.</th>
               <th>Cliente</th>
               <th>Comissões</th>
               <th>Ações</th>
@@ -177,15 +198,81 @@
       </div>
     </div>
 
-    <!-- ============== FOLHA SEMANAL ============== -->
-    <div id="page-folha" class="page">
+    <!-- ============== PENDENTES ============== -->
+    <div id="page-pendentes" class="page">
       <div class="page-header">
-        <h2 class="page-title">💰 Folha de Pagamento Semanal</h2>
+        <h2 class="page-title">Pendentes</h2>
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <button class="btn btn-danger btn-sm" onclick="excluirSelecionadosPend()">Excluir Selecionados</button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="form-group" style="margin-bottom:0">
+          <label>Buscar cliente / telefone</label>
+          <input type="text" id="pendFiltroCliente" class="form-control" placeholder="Nome ou telefone...">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Ano</label>
+          <select id="pendFiltroAno" class="form-control"></select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Mês</label>
+          <select id="pendFiltroMes" class="form-control"></select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Colaborador</label>
+          <select id="pendFiltroColaborador" class="form-control"><option value="">Todos</option></select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Status</label>
+          <select id="pendFiltroStatus" class="form-control" multiple size="3">
+            <option value="CADASTRADO" selected>CADASTRADO</option>
+            <option value="PENDENTE" selected>PENDENTE</option>
+            <option value="PRONTO" selected>PRONTO</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card mb-16" style="background:var(--gray-50)">
+        <div class="flex-between" style="font-size:13px">
+          <span><strong id="pendQtd">0</strong> registros pendentes</span>
+          <span>Total: <strong id="pendTotal">R$ 0,00</strong></span>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th class="checkbox-cell">
+                <input type="checkbox" id="selectAllPend" onchange="selecionarTodosPend(this.checked)">
+              </th>
+              <th>Vencimento</th>
+              <th>Cliente</th>
+              <th>Tipo</th>
+              <th class="text-right">Valor</th>
+              <th>Gestor</th>
+              <th>Produtor</th>
+              <th>Atendente</th>
+              <th>Status Op.</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="pendentesBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ============== COMISSÕES ============== -->
+    <div id="page-comissoes" class="page">
+      <div class="page-header">
+        <h2 class="page-title">💰 Comissões</h2>
       </div>
 
       <div class="alert alert-info">
-        <strong>Como funciona:</strong> aqui aparecem todas as comissões pendentes de pagamento aos colaboradores. 
-        Só aparecem trabalhos onde o cliente <strong>já pagou</strong>. Selecione os trabalhos que quer baixar e clique em "Pagar Selecionados", 
+        <strong>Como funciona:</strong> aqui aparecem todas as comissões pendentes de pagamento aos colaboradores.
+        Só aparecem trabalhos onde o cliente <strong>já pagou</strong>. Selecione os trabalhos que quer baixar e clique em "Pagar Selecionados",
         ou use "Pagar Tudo do Colaborador" para baixar todas as comissões pendentes de uma pessoa de uma vez.
       </div>
 
@@ -200,8 +287,9 @@
         </div>
         <div class="form-group" style="margin-bottom:0">
           <label>Ações em massa</label>
-          <div style="display:flex; gap:8px">
+          <div style="display:flex; gap:8px; flex-wrap:wrap">
             <button class="btn btn-success" onclick="pagarSelecionados()">✓ Pagar Selecionados</button>
+            <button class="btn btn-primary btn-sm" onclick="selecionarTodosVisiveis()">Selecionar Todos Visíveis</button>
             <button class="btn btn-outline btn-sm" onclick="carregarFolha()">↻ Atualizar</button>
           </div>
         </div>
@@ -249,6 +337,10 @@
 
       <div class="filters">
         <div class="form-group" style="margin-bottom:0">
+          <label>Ano</label>
+          <select id="despFiltroAno" class="form-control"></select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
           <label>Mês</label>
           <select id="despFiltroMes" class="form-control"></select>
         </div>
@@ -256,13 +348,13 @@
           <label>Categoria</label>
           <select id="despFiltroCategoria" class="form-control">
             <option value="">Todas</option>
-            <option value="SALÁRIO">Salário</option>
-            <option value="DES.PERACIONAIS">Despesas Operacionais</option>
-            <option value="ATENDIMENTO">Atendimento</option>
-            <option value="PRODUÇÃO">Produção</option>
-            <option value="MARKETING">Marketing</option>
-            <option value="INDICAÇÃO">Indicação</option>
-            <option value="TRIBUTOS">Tributos</option>
+            <option value="ATENDIMENTO">ATENDIMENTO</option>
+            <option value="DEP. OPERACIONAL">DEP. OPERACIONAL</option>
+            <option value="INDICAÇÃO">INDICAÇÃO</option>
+            <option value="MARKETING">MARKETING</option>
+            <option value="PRODUÇÃO">PRODUÇÃO</option>
+            <option value="SALÁRIO">SALÁRIO</option>
+            <option value="TRIBUTO">TRIBUTO</option>
           </select>
         </div>
       </div>
@@ -315,20 +407,20 @@
   </main>
 </div>
 
-<!-- ============== MODAL: AGENDAMENTO ============== -->
+<!-- ============== MODAL: OPERAÇÃO / AGENDAMENTO ============== -->
 <div id="modalAgendamento" class="modal-overlay">
   <div class="modal modal-large">
     <div class="modal-header">
-      <h3 class="modal-title" id="modalAgendamentoTitulo">Novo Agendamento</h3>
+      <h3 class="modal-title" id="modalAgendamentoTitulo">Nova Operação</h3>
       <button class="modal-close" onclick="fecharModal('modalAgendamento')">×</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="ageId">
-      
+
       <div class="form-row">
         <div class="form-group">
           <label>Data *</label>
-          <input type="date" id="ageData" class="form-control" required>
+          <input type="date" id="ageData" class="form-control" required onchange="ageDataChanged()">
         </div>
         <div class="form-group">
           <label>Mês</label>
@@ -345,6 +437,16 @@
             <option value="OUTUBRO">Outubro</option>
             <option value="NOVEMBRO">Novembro</option>
             <option value="DEZEMBRO">Dezembro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status da Operação</label>
+          <select id="ageStatus" class="form-control">
+            <option value="CADASTRADO">CADASTRADO</option>
+            <option value="PENDENTE">PENDENTE</option>
+            <option value="PRONTO">PRONTO</option>
+            <option value="RECEBIDO">RECEBIDO</option>
+            <option value="CANCELADO">CANCELADO</option>
           </select>
         </div>
       </div>
@@ -385,7 +487,7 @@
       </div>
 
       <h4 class="mt-16 mb-12" style="font-size:14px; color:var(--gray-700)">Equipe Responsável</h4>
-      
+
       <div class="form-row">
         <div class="form-group">
           <label>Gestor</label>
@@ -462,11 +564,11 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="despId">
-      
+
       <div class="form-row">
         <div class="form-group">
           <label>Data *</label>
-          <input type="date" id="despData" class="form-control" required>
+          <input type="date" id="despData" class="form-control" required onchange="despDataChanged()">
         </div>
         <div class="form-group">
           <label>Mês</label>
@@ -496,13 +598,13 @@
         <div class="form-group">
           <label>Categoria</label>
           <select id="despCategoria" class="form-control">
-            <option value="SALÁRIO">Salário</option>
-            <option value="DES.PERACIONAIS">Despesas Operacionais</option>
-            <option value="ATENDIMENTO">Atendimento</option>
-            <option value="PRODUÇÃO">Produção</option>
-            <option value="MARKETING">Marketing</option>
-            <option value="INDICAÇÃO">Indicação</option>
-            <option value="TRIBUTOS">Tributos</option>
+            <option value="ATENDIMENTO">ATENDIMENTO</option>
+            <option value="DEP. OPERACIONAL">DEP. OPERACIONAL</option>
+            <option value="INDICAÇÃO">INDICAÇÃO</option>
+            <option value="MARKETING">MARKETING</option>
+            <option value="PRODUÇÃO">PRODUÇÃO</option>
+            <option value="SALÁRIO">SALÁRIO</option>
+            <option value="TRIBUTO">TRIBUTO</option>
           </select>
         </div>
         <div class="form-group">
@@ -516,6 +618,33 @@
       <button class="btn btn-danger" id="btnExcluirDespesa" onclick="excluirDespesa()" style="margin-right:auto; display:none">Excluir</button>
       <button class="btn btn-outline" onclick="fecharModal('modalDespesa')">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarDespesa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============== MODAL: IMPORTAR CSV ============== -->
+<div id="modalImportCSV" class="modal-overlay">
+  <div class="modal modal-large">
+    <div class="modal-header">
+      <h3 class="modal-title">Importar Operações via CSV</h3>
+      <button class="modal-close" onclick="fecharModal('modalImportCSV')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-info">
+        <strong>Formato:</strong> Cole as linhas CSV com o cabeçalho:<br>
+        <code>Vencimento;Cliente;Tipo;Telefone;Páginas;Valor;Pagamento</code><br>
+        O campo Vencimento deve estar no formato YYYY-MM-DD ou DD/MM/YYYY.
+      </div>
+      <div class="form-group">
+        <label>Cole o CSV aqui</label>
+        <textarea id="csvTexto" class="form-control" rows="10" placeholder="Vencimento;Cliente;Tipo;Telefone;Páginas;Valor;Pagamento&#10;2024-01-15;João Silva;TCC;11999990000;50;800;PIX"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="previewCSV()">Visualizar</button>
+      <div id="csvPreview" style="margin-top:16px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modalImportCSV')">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmarImport" onclick="confirmarImportCSV()" style="display:none">Confirmar Importação</button>
     </div>
   </div>
 </div>
