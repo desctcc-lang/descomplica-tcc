@@ -714,6 +714,35 @@ tbody tr.cliente-pagou:hover {
   to { transform: translateY(0); opacity: 1; }
 }
 
+/* ============== STATUS DE OPERAÇÃO (LINHAS DA TABELA) ============== */
+tbody tr.row-recebido { background: #D4F4DD !important; }
+tbody tr.row-recebido:hover { background: #C0ECC9 !important; }
+tbody tr.row-pronto { background: #BBDEFB; }
+tbody tr.row-pronto:hover { background: #90CAF9; }
+tbody tr.row-pendente { background: #E3F2FD; }
+tbody tr.row-pendente:hover { background: #BBDEFB; }
+tbody tr.row-cancelado { background: #FFEBEE; }
+tbody tr.row-cancelado:hover { background: #FFCDD2; }
+
+/* ============== BADGES DE STATUS ============== */
+.badge-recebido { background: #D4F4DD; color: #1B6B31; }
+.badge-pronto { background: #1565C0; color: white; }
+.badge-pendente { background: #90CAF9; color: #0D47A1; }
+.badge-cancelado { background: #FFCDD2; color: #B71C1C; }
+.badge-cadastrado { background: #F5F5F5; color: #424242; border: 1px solid #E0E0E0; }
+
+/* ============== SELECT DE STATUS INLINE NA TABELA ============== */
+.status-select-inline {
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #CED4DA;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  background: white;
+  max-width: 130px;
+}
+
 /* ============== RESPONSIVO ============== */
 @media (max-width: 768px) {
   .main { padding: 12px; }
