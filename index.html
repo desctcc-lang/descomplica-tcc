@@ -101,7 +101,7 @@
       </div>
 
       <div class="card">
-        <h3 class="mb-16">Resumo por Colaborador (Mês Atual)</h3>
+        <h3 class="mb-16">Resumo por Colaborador</h3>
         <div class="table-wrapper">
           <table>
             <thead>
@@ -328,7 +328,7 @@
       <div class="form-row">
         <div class="form-group">
           <label>Data *</label>
-          <input type="date" id="ageData" class="form-control" required>
+          <input type="date" id="ageData" class="form-control" required onchange="atualizarMesDoAgendamento()">
         </div>
         <div class="form-group">
           <label>Mês</label>
@@ -372,7 +372,7 @@
       <div class="form-row">
         <div class="form-group">
           <label>Valor (R$) *</label>
-          <input type="number" id="ageValor" class="form-control" step="0.01" required onchange="calcularComissoes()">
+          <input type="number" id="ageValor" class="form-control" step="0.01" required oninput="calcularComissoes()">
         </div>
         <div class="form-group">
           <label>Desconto</label>
@@ -429,6 +429,10 @@
           <div class="flex-between mb-12">
             <strong>Cliente pagou?</strong>
             <span id="ageStatusClientePagou"></span>
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label style="font-size:12px">Data do pagamento do cliente</label>
+            <input type="date" id="ageDataPagamentoCliente" class="form-control">
           </div>
           <button type="button" class="btn btn-success" id="btnMarcarClientePagou" onclick="marcarClientePagou()">
             ✓ Marcar Cliente como Pago
@@ -516,6 +520,20 @@
       <button class="btn btn-danger" id="btnExcluirDespesa" onclick="excluirDespesa()" style="margin-right:auto; display:none">Excluir</button>
       <button class="btn btn-outline" onclick="fecharModal('modalDespesa')">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarDespesa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============== MODAL: HISTÓRICO DETALHE ============== -->
+<div id="modalHistoricoDetalhe" class="modal-overlay">
+  <div class="modal modal-large">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modalHistoricoDetalheTitulo">Detalhe do Pagamento</h3>
+      <button class="modal-close" onclick="fecharModal('modalHistoricoDetalhe')">×</button>
+    </div>
+    <div class="modal-body" id="modalHistoricoDetalheBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modalHistoricoDetalhe')">Fechar</button>
     </div>
   </div>
 </div>

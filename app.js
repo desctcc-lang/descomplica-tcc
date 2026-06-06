@@ -305,7 +305,8 @@ function abrirNovoAgendamento() {
   
   document.getElementById('ageStatusCliente').style.display = 'none';
   document.getElementById('btnExcluirAgendamento').style.display = 'none';
-  
+  document.getElementById('ageDataPagamentoCliente').value = new Date().toISOString().split('T')[0];
+
   document.getElementById('modalAgendamento').classList.add('active');
 }
 
@@ -333,7 +334,8 @@ function abrirEditarAgendamento(id) {
   
   document.getElementById('ageStatusCliente').style.display = 'block';
   document.getElementById('btnExcluirAgendamento').style.display = 'inline-flex';
-  
+  document.getElementById('ageDataPagamentoCliente').value = a.data_pagamento_cliente || new Date().toISOString().split('T')[0];
+
   atualizarStatusClienteUI(a);
   
   document.getElementById('modalAgendamento').classList.add('active');
@@ -430,6 +432,13 @@ function calcularComissoes() {
   document.getElementById('ageComissaoAtendente').value = (valor * 0.05).toFixed(2);
 }
 
+function atualizarMesDoAgendamento() {
+  const dataVal = document.getElementById('ageData').value;
+  if (!dataVal) return;
+  const mes = MESES[new Date(dataVal + 'T00:00:00').getMonth()];
+  if (mes) document.getElementById('ageMes').value = mes;
+}
+
 async function salvarAgendamento() {
   const id = document.getElementById('ageId').value;
   const dados = {
@@ -502,9 +511,8 @@ async function marcarClientePagou() {
   const id = document.getElementById('ageId').value;
   if (!id) return;
   
-  const dataPag = prompt('Data do pagamento (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
-  if (!dataPag) return;
-  
+  const dataPag = document.getElementById('ageDataPagamentoCliente').value || new Date().toISOString().split('T')[0];
+
   mostrarLoading(true);
   const { data, error } = await supabase
     .from('agendamentos')
@@ -660,7 +668,7 @@ function renderizarFolha() {
         data_pagamento_cliente: a.data_pagamento_cliente,
       });
     }
-    if (a.produtor && a.comissao_produtor > 0 && !a.pago_produtor) {
+    if (a.produtor && a.produtor !== 'NOVO' && a.produtor !== 'DESC' && a.comissao_produtor > 0 && !a.pago_produtor) {
       pendentes.push({
         chave: `${a.id}-produtor`,
         agendamento_id: a.id,
@@ -674,7 +682,7 @@ function renderizarFolha() {
         data_pagamento_cliente: a.data_pagamento_cliente,
       });
     }
-    if (a.atendente && a.comissao_atendente > 0 && !a.pago_atendente) {
+    if (a.atendente && a.atendente !== 'NOVO' && a.atendente !== 'DESC' && a.comissao_atendente > 0 && !a.pago_atendente) {
       pendentes.push({
         chave: `${a.id}-atendente`,
         agendamento_id: a.id,
@@ -972,11 +980,11 @@ function atualizarDashboard() {
         if (a.pago_gestor) comissoesPagas += a.comissao_gestor;
         else comissoesAPagar += a.comissao_gestor;
       }
-      if (a.produtor && a.comissao_produtor > 0) {
+      if (a.produtor && a.produtor !== 'NOVO' && a.produtor !== 'DESC' && a.comissao_produtor > 0) {
         if (a.pago_produtor) comissoesPagas += a.comissao_produtor;
         else comissoesAPagar += a.comissao_produtor;
       }
-      if (a.atendente && a.comissao_atendente > 0) {
+      if (a.atendente && a.atendente !== 'NOVO' && a.atendente !== 'DESC' && a.comissao_atendente > 0) {
         if (a.pago_atendente) comissoesPagas += a.comissao_atendente;
         else comissoesAPagar += a.comissao_atendente;
       }
@@ -1325,12 +1333,52 @@ function renderizarHistorico() {
 function verDetalheHistorico(id) {
   const h = cacheHistorico.find(x => x.id === id);
   if (!h) return;
-  
+
   const ageIds = h.agendamento_ids || [];
   const trabs = cacheAgendamentos.filter(a => ageIds.includes(a.id));
-  
-  const linhas = trabs.map(a => `${formatarData(a.data)} - ${a.cliente} - ${a.tipo || ''}`).join('\n');
-  alert(`Pagamento de ${formatarMoeda(h.total_pago)} para ${h.colaborador} em ${formatarData(h.data_pagamento)}\n\nTrabalhos:\n${linhas}`);
+
+  document.getElementById('modalHistoricoDetalheTitulo').textContent =
+    `Pagamento — ${escapeHtml(h.colaborador)} — ${formatarData(h.data_pagamento)}`;
+
+  document.getElementById('modalHistoricoDetalheBody').innerHTML = `
+    <div class="cards-grid mb-16">
+      <div class="stat-card success">
+        <div class="stat-card-label">Total Pago</div>
+        <div class="stat-card-value text-success">${formatarMoeda(h.total_pago)}</div>
+      </div>
+      <div class="stat-card info">
+        <div class="stat-card-label">Trabalhos</div>
+        <div class="stat-card-value">${h.qtd_trabalhos}</div>
+      </div>
+    </div>
+    ${trabs.length > 0 ? `
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Cliente</th>
+            <th>Tipo</th>
+            <th class="text-right">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${trabs.map(a => `
+            <tr>
+              <td>${formatarData(a.data)}</td>
+              <td><strong>${escapeHtml(a.cliente)}</strong></td>
+              <td>${escapeHtml(a.tipo || '—')}</td>
+              <td class="text-right text-bold">${formatarMoeda(a.valor)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    ` : '<p class="text-muted text-center" style="padding:20px">Detalhes dos trabalhos não disponíveis</p>'}
+    ${h.observacoes ? `<p class="text-muted mt-16" style="font-size:12px">${escapeHtml(h.observacoes)}</p>` : ''}
+  `;
+
+  document.getElementById('modalHistoricoDetalhe').classList.add('active');
 }
 
 // ============================================================
